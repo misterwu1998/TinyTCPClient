@@ -7,8 +7,11 @@ int main(int argc, char const *argv[])
 {
   TinyHTTPClient c("127.0.0.1",6324);
   TTCPS2::HTTPRequest req;
-  req << http_method::HTTP_GET
-      << "/login.html";
+  // req << http_method::HTTP_GET
+  //     << "/login.html";
+  req << http_method::HTTP_POST
+      << "/null"
+      <<= "./Makefile";
   c.send(req);
   c.send(req);
   TTCPS2::HTTPResponse res;

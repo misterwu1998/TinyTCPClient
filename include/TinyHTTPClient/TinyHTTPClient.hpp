@@ -75,17 +75,16 @@ TTCPS2::HTTPRequest& operator<<(TTCPS2::HTTPRequest& r, http_method method);
 TTCPS2::HTTPRequest& operator<<(TTCPS2::HTTPRequest& r, std::pair<std::string, std::string> const& headerKV);
 TTCPS2::HTTPRequest& operator<<(TTCPS2::HTTPRequest& r, std::string const& url);
 
-/// @brief 指定为非chunk data模式，丢弃filepath
+/// @brief 指定为非chunk data模式，丢弃{"Transfer-Encoding": "chunked"}、filepath
 /// @param r 
 /// @param bodyData_and_length 
 /// @return 
 TTCPS2::HTTPRequest& operator<<(TTCPS2::HTTPRequest& r, std::pair<const void*, uint32_t> const& bodyData_and_length);
 
-/// @brief 指定为chunk data模式，丢弃Content-Length键值对
+/// @brief 指定为chunk data模式，丢弃Content-Length键值对、body
 /// @param r 
 /// @param filepath 
 /// @return 
-// TTCPS2::HTTPRequest& operator<<=(TTCPS2::HTTPRequest& r, std::string const& filepath);
-// 暂不考虑
+TTCPS2::HTTPRequest& operator<<=(TTCPS2::HTTPRequest& r, std::string const& filepath);
 
 #endif // _TinyHTTPClient_hpp

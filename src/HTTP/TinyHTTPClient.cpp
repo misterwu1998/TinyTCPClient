@@ -118,6 +118,15 @@ TinyHTTPClient::TinyHTTPClient(const char* serverIP, unsigned short port)
   settings.on_message_complete = onMessageComplete;
 }
 
+#include <iomanip>
+std::string _dec2hex(int64_t i){
+  std::stringstream ss;
+  ss << std::setiosflags(std::ios_base::fmtflags::_S_uppercase) << std::hex << i;
+  std::string ret;
+  ss >> ret;
+  return ret;
+}
+
 int TinyHTTPClient::send(TTCPS2::HTTPRequest const& r){
   std::string reqHead;
  {std::stringstream ss;
@@ -165,26 +174,34 @@ int TinyHTTPClient::send(TTCPS2::HTTPRequest const& r){
       l += nSent;
       rp = (char*)rp + nSent;
     }while(l<len);
-  // 暂不考虑chunk_data模式的Request
-  // }else if(! r.filePath.empty()){//是chunk data
-  //   std::ifstream f(r.filePath, std::ios::in|std::ios::binary);
-  //   if(! f.is_open()){
-  //     return -1;
-  //   }
-  //   char buf[BUFFER_SIZE];
-  //   while(! f.eof()){
-  //     f.read(buf,BUFFER_SIZE);
-  //     auto nRead = f.gcount();
-  //     l = 0;
-  //     do{
-  //       auto nSent = c->send(buf, nRead-l);
-  //       if(nSent<0){
-  //         return -1;
-  //       }
-  //       l += nSent;
-  //     }while(l<nRead);
-  //   }
-  // 暂不考虑chunk_data模式的Request
+  }else if(! r.filePath.empty()){//是chunk data
+    std::ifstream f(r.filePath, std::ios::in|std::ios::binary);
+    if(f.is_open()){//文件存在，才有内容可发
+      char buf[BUFFER_SIZE];
+      while(! f.eof()){
+        f.read(buf,BUFFER_SIZE);
+        auto nRead = f.gcount();
+        auto toSend = _dec2hex(nRead) + "\r\n" + std::string(buf,nRead) + "\r\n";
+        nRead = 0;//复用
+        do{
+          auto ret = c->send(toSend.data()+nRead, toSend.length()-nRead);
+          if(0>ret){
+            return -1;
+          }
+          nRead += ret;
+        }while(nRead<toSend.length());
+      }
+    }
+    // 不管文件存不存在，都要发最后的空块
+    auto toSend = "0\r\n\r\n";
+    l = 0;//复用
+    do{
+      auto ret = c->send(toSend+l, 5-l);
+      if(0>ret){
+        return -1;
+      }
+      l += ret;
+    }while(l<5);
   }
   return 0;
 }
@@ -255,15 +272,25 @@ TTCPS2::HTTPRequest& operator<<(TTCPS2::HTTPRequest& r, std::pair<const void*, u
   if(1>len) return r;
   memcpy(wp, bodyData_and_length.first, len);
   r.body->push(len);
+
+  auto it = r.header.find("Transfer-Encoding");
+  if(it!=r.header.end() && it->second.find("chunked")!=std::string::npos){//原本是分块传输模式
+    r.header.erase(it);
+  }
+  r.filePath.clear();
   return r;
 }
 
-// TTCPS2::HTTPRequest& operator<<=(TTCPS2::HTTPRequest& r, std::string const& filepath){
-//   auto it = r.header.find("Content-Length");
-//   if(it!=r.header.end()){
-//     r.header.erase(it);
-//   }
-//   r.filePath = filepath;
-//   return r;
-// }
-// 暂不考虑
+TTCPS2::HTTPRequest& operator<<=(TTCPS2::HTTPRequest& r, std::string const& filepath){
+  r.filePath = filepath;
+  auto it = r.header.find("Transfer-Encoding");
+  if(it==r.header.end() || it->second.find("chunked")==std::string::npos){//原本非分块传输模式
+    r.header.insert({"Transfer-Encoding", "chunked"});
+  }
+
+  it = r.header.find("Content-Length");
+  if(it!=r.header.end()){
+    r.header.erase(it);
+  }
+  return r;
+}
