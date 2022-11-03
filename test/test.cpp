@@ -10,7 +10,9 @@ int main(int argc, char const *argv[])
   req << http_method::HTTP_GET
       << "/login.html";
   c.send(req);
+  c.send(req);
   TTCPS2::HTTPResponse res;
+  c.recv(res);
   c.recv(res);
 
   // TinyTCPClient c("127.0.0.1",6324);

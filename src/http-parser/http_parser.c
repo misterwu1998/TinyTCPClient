@@ -163,8 +163,8 @@ do {                                                                 \
 
 #define PROXY_CONNECTION "proxy-connection"
 #define CONNECTION "connection"
-#define CONTENT_LENGTH "Content-Length"
-#define TRANSFER_ENCODING "Transfer-Encoding"
+#define CONTENT_LENGTH "content-length"
+#define TRANSFER_ENCODING "transfer-encoding"
 #define UPGRADE "upgrade"
 #define CHUNKED "chunked"
 #define KEEP_ALIVE "keep-alive"
@@ -1322,7 +1322,7 @@ reexecute:
               }
               break;
 
-            /* Content-Length */
+            /* content-length */
 
             case h_matching_content_length:
               parser->index++;
@@ -1334,7 +1334,7 @@ reexecute:
               }
               break;
 
-            /* Transfer-Encoding */
+            /* transfer-encoding */
 
             case h_matching_transfer_encoding:
               parser->index++;
@@ -1803,7 +1803,7 @@ reexecute:
           REEXECUTE();
         }
 
-        /* Cannot use Transfer-Encoding and a Content-Length header together
+        /* Cannot use transfer-encoding and a content-length header together
            per the HTTP specification. (RFC 7230 Section 3.3.3) */
         if ((parser->uses_transfer_encoding == 1) &&
             (parser->flags & F_CONTENTLENGTH)) {
@@ -1928,7 +1928,7 @@ reexecute:
             UPDATE_STATE(s_body_identity);
           } else {
             if (!http_message_needs_eof(parser)) {
-              /* Assume Content-Length 0 - read the next */
+              /* Assume content-length 0 - read the next */
               UPDATE_STATE(NEW_MESSAGE());
               CALLBACK_NOTIFY(message_complete);
             } else {

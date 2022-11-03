@@ -23,15 +23,6 @@ int TinyHTTPClient::onStatus(http_parser* parser, const char *at, size_t length)
 
 int TinyHTTPClient::onHeaderField(http_parser* parser, const char *at, size_t length){
   if(! THIS->headerValueNow.empty()){//上一个header键值对还没处理好
-    // http-parser.c 似乎有bug，探测"Content-Length"时把字符全转为小写了，却拿它跟未转小写的"Content-Length"作比较，因此，手动补回Content-Length
-    if(THIS->headerKeyNow == "Content-Length" && parser->content_length==((uint64_t) -1)){
-      std::stringstream ss;
-      ss << THIS->headerValueNow;
-      int32_t contentLength;
-      ss >> contentLength;
-      if(contentLength>=0)      parser->content_length = contentLength;
-    }
-    
     THIS->responseNow->header.insert({THIS->headerKeyNow, THIS->headerValueNow});
     THIS->headerKeyNow.clear();
     THIS->headerValueNow.clear();
@@ -48,15 +39,6 @@ int TinyHTTPClient::onHeaderValue(http_parser* parser, const char *at, size_t le
 int TinyHTTPClient::onHeadersComplete(http_parser* parser){
   auto h = THIS;
   if(!h->headerValueNow.empty()){//上一个header键值对还没处理好
-    // http-parser.c 似乎有bug，探测"Content-Length"时把字符全转为小写了，却拿它跟未转小写的"Content-Length"作比较，因此，手动补回Content-Length
-    if(THIS->headerKeyNow == "Content-Length" && parser->content_length==((uint64_t) -1)){
-      std::stringstream ss;
-      ss << THIS->headerValueNow;
-      int32_t contentLength;
-      ss >> contentLength;
-      if(contentLength>=0)      parser->content_length = contentLength;
-    }
-    
     h->responseNow->header.insert({h->headerKeyNow, h->headerValueNow});
     h->headerKeyNow.clear();
     h->headerValueNow.clear();
@@ -211,6 +193,10 @@ int TinyHTTPClient::recv(TTCPS2::HTTPResponse& r){
   if(responseNow){//按照预期，上一个response应当已经整个被读走、responseNow被onMessageComplete()设为空（而onMessageComplete()返回非0使parser立即停止，也是因此需要每次都初始化parser），因为这里会阻塞式recv()直到一个response完整读入，甚至会有多余的数据
     return -1;
   }
+
+  r.header.clear();
+  if(r.body) r.body->pop(r.body->getLength());
+  r.filePath.clear();
   responseNow = &r;//新的response开始读取
   http_parser_init(&parser, http_parser_type::HTTP_RESPONSE);
 
