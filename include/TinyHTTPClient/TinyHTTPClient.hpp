@@ -5,6 +5,7 @@
 #include <string>
 #include <fstream>
 #include "http-parser/http_parser.h"
+#include <initializer_list>
 
 namespace TTCPS2
 {
@@ -52,9 +53,10 @@ private:
   http_parser_settings settings;
   char* buf;
   uint32_t dataLen_buf;
-  std::string headerKeyNow;
-  std::string headerValueNow;
-  std::fstream bodyFileNow;
+
+  std::string headerKeyNow;//解析HTTP数据的过程中使用的暂存变量
+  std::string headerValueNow;//解析HTTP数据的过程中使用的暂存变量
+  std::fstream bodyFileNow;//解析HTTP数据的过程中使用的暂存变量
 
 public:
   TinyHTTPClient(const char* serverIP, unsigned short port);
@@ -70,21 +72,5 @@ public:
   int recv(TTCPS2::HTTPResponse& r);
   virtual~TinyHTTPClient();
 };
-
-TTCPS2::HTTPRequest& operator<<(TTCPS2::HTTPRequest& r, http_method method);
-TTCPS2::HTTPRequest& operator<<(TTCPS2::HTTPRequest& r, std::pair<std::string, std::string> const& headerKV);
-TTCPS2::HTTPRequest& operator<<(TTCPS2::HTTPRequest& r, std::string const& url);
-
-/// @brief 指定为非chunk data模式，丢弃{"Transfer-Encoding": "chunked"}、filepath
-/// @param r 
-/// @param bodyData_and_length 
-/// @return 
-TTCPS2::HTTPRequest& operator<<(TTCPS2::HTTPRequest& r, std::pair<const void*, uint32_t> const& bodyData_and_length);
-
-/// @brief 指定为chunk data模式，丢弃Content-Length键值对、body
-/// @param r 
-/// @param filepath 
-/// @return 
-TTCPS2::HTTPRequest& operator<<=(TTCPS2::HTTPRequest& r, std::string const& filepath);
 
 #endif // _TinyHTTPClient_hpp

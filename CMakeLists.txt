@@ -10,6 +10,7 @@ add_library(TinyTCPClient SHARED ./src/TinyTCPClient.cpp)
 
 file(GLOB_RECURSE SOURCE_CPP ./src/*.cpp)
 file(GLOB_RECURSE SOURCE_C ./src/*.c)
+
 add_library(TinyHTTPClient SHARED ${SOURCE_C} ${SOURCE_CPP})
 target_link_libraries(TinyHTTPClient TinyTCPClient)
 

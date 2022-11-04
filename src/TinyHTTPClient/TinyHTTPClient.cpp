@@ -47,38 +47,31 @@ int TinyHTTPClient::onHeadersComplete(http_parser* parser){
 }
 
 int TinyHTTPClient::onBody(http_parser* parser, const char *at, size_t length){
-  /// 填入body, 填不进去了就写出到文件
-  auto h = THIS;
-  uint32_t actualLen;
-  if(!h->responseNow->body){//还未创建Buffer
-    h->responseNow->body = std::make_shared<TTCPS2::Buffer>(length);
-  }
-  auto wp = h->responseNow->body->getWritingPtr(length,actualLen);
-  if(!h->bodyFileNow.is_open() && actualLen<length){//暂未有文件，且位置不够了
-    auto dir = "./temp/response_data/";
-    h->responseNow->filePath = dir + std::to_string(TTCPS2::currentTimeMillis());
-    while(true){//确保名称不重复
-      h->bodyFileNow.open(h->responseNow->filePath, std::ios::in | std::ios::binary);
-      if(h->bodyFileNow.is_open()){//说明这个同名文件已存在
-        h->bodyFileNow.close();
-        h->responseNow->filePath = dir + std::to_string(TTCPS2::currentTimeMillis());//换个名字
-      }else{
-        h->bodyFileNow.close();
-        break;
+  auto it = THIS->responseNow->header.find("Transfer-Encoding");
+  if(it!=THIS->responseNow->header.end() && it->second.find("chunked")!=std::string::npos){//是分块模式
+    if(THIS->bodyFileNow.is_open()==false){//暂未有文件
+      auto prefix = "./temp/response_data_";
+      THIS->responseNow->filePath = prefix + std::to_string(TTCPS2::currentTimeMillis());
+      while(true){//循环直到文件名不重复
+        THIS->bodyFileNow.open(THIS->responseNow->filePath, std::ios::in | std::ios::binary);
+        if(THIS->bodyFileNow.is_open()){//说明这个同名文件已存在
+          THIS->bodyFileNow.close();
+          THIS->responseNow->filePath = prefix + std::to_string(TTCPS2::currentTimeMillis());//换个名字
+        }else{
+          THIS->bodyFileNow.close();
+          break;
+        }
       }
+      THIS->bodyFileNow.open(THIS->responseNow->filePath, std::ios::out | std::ios::binary);
     }
-    h->bodyFileNow.open(h->responseNow->filePath, std::ios::out | std::ios::binary);
-
-    // 先写原有的内容再写新内容
-    auto rp = h->responseNow->body->getReadingPtr(h->responseNow->body->getLength(),actualLen);
-    h->bodyFileNow.write((char*)rp, h->responseNow->body->getLength())
-                  .write(at,length);
-    h->responseNow->body = nullptr; // 舍弃Buffer // h->responseNow->body->pop(h->responseNow->body->getLength());
-  }else if(h->bodyFileNow.is_open()){//已经有文件
-    h->bodyFileNow.write(at,length);
-  }else{//暂未有文件但位置还够
+    THIS->bodyFileNow.write(at,length);
+  }else{//不是分块模式
+    if(!THIS->responseNow->body){//还未创建Buffer
+      THIS->responseNow->body = std::make_shared<TTCPS2::Buffer>(length);
+    }
+    uint32_t al; auto wp = THIS->responseNow->body->getWritingPtr(length,al);
     memcpy(wp,at,length);
-    h->responseNow->body->push(length);
+    THIS->responseNow->body->push(length);
   }
   return 0;
 }
@@ -92,9 +85,9 @@ int TinyHTTPClient::onChunkComplete(http_parser* parser){
 }
 
 int TinyHTTPClient::onMessageComplete(http_parser* parser){
-  if(THIS->bodyFileNow.is_open()){
-    THIS->bodyFileNow.close();
-  }
+  THIS->bodyFileNow.close();
+  THIS->headerKeyNow.clear();
+  THIS->headerValueNow.clear();
   THIS->responseNow = NULL;
   return 114514;//直接跳出，结束解析
 }
@@ -104,6 +97,9 @@ TinyHTTPClient::TinyHTTPClient(const char* serverIP, unsigned short port)
 , buf(new char[BUFFER_SIZE])
 , dataLen_buf(0)
 , responseNow(NULL){
+  // 不定长的HTTP消息体需要创建文件来保存，需要保证目录存在
+  if(0!=system("mkdir -p ./temp/")) exit(-1);
+
   http_parser_init(&parser, http_parser_type::HTTP_RESPONSE);
   parser.data = this;
   http_parser_settings_init(&settings);
@@ -243,54 +239,4 @@ int TinyHTTPClient::recv(TTCPS2::HTTPResponse& r){
 TinyHTTPClient::~TinyHTTPClient(){
   delete[] buf;
   delete c;
-}
-
-TTCPS2::HTTPRequest& operator<<(TTCPS2::HTTPRequest& r, http_method method){
-  r.method = method;
-  return r;
-}
-
-TTCPS2::HTTPRequest& operator<<(TTCPS2::HTTPRequest& r, std::pair<std::string, std::string> const& headerKV){
-  auto it = r.header.find(headerKV.first);
-  while(it!=r.header.end() && it->second!=headerKV.second){
-    it++;
-  }
-  if(it==r.header.end()){//确实还没有这个键值对
-    r.header.insert(headerKV);
-  }
-  return r;
-}
-
-TTCPS2::HTTPRequest& operator<<(TTCPS2::HTTPRequest& r, std::string const& url){
-  r.url = url;
-  return r;
-}
-
-TTCPS2::HTTPRequest& operator<<(TTCPS2::HTTPRequest& r, std::pair<const void*, uint32_t> const& bodyData_and_length){
-  if(! r.body) r.body = std::make_shared<TTCPS2::Buffer>(bodyData_and_length.second);
-  uint32_t len; auto wp = r.body->getWritingPtr(bodyData_and_length.second, len);
-  if(1>len) return r;
-  memcpy(wp, bodyData_and_length.first, len);
-  r.body->push(len);
-
-  auto it = r.header.find("Transfer-Encoding");
-  if(it!=r.header.end() && it->second.find("chunked")!=std::string::npos){//原本是分块传输模式
-    r.header.erase(it);
-  }
-  r.filePath.clear();
-  return r;
-}
-
-TTCPS2::HTTPRequest& operator<<=(TTCPS2::HTTPRequest& r, std::string const& filepath){
-  r.filePath = filepath;
-  auto it = r.header.find("Transfer-Encoding");
-  if(it==r.header.end() || it->second.find("chunked")==std::string::npos){//原本非分块传输模式
-    r.header.insert({"Transfer-Encoding", "chunked"});
-  }
-
-  it = r.header.find("Content-Length");
-  if(it!=r.header.end()){
-    r.header.erase(it);
-  }
-  return r;
 }
