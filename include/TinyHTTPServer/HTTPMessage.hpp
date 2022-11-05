@@ -23,7 +23,7 @@ namespace TTCPS2
     HTTPRequest& set(http_method method);
     HTTPRequest& set(std::string const& headerKey, std::string const& headerValue);
     HTTPRequest& set(std::string const& url);
-    HTTPRequest& set_body(const void* data, uint32_t length);
+    HTTPRequest& append(const void* data, uint32_t length);
     HTTPRequest& set_chunked(std::string const& filepath);
   };
 
@@ -39,7 +39,7 @@ namespace TTCPS2
     HTTPResponse();
     HTTPResponse& set(http_status s);
     HTTPResponse& set(std::string const& headerKey, std::string const& headerValue);
-    HTTPResponse& set_body(const void* data, uint32_t length);
+    HTTPResponse& append(const void* data, uint32_t length);
     HTTPResponse& set_chunked(std::string const& filepath);
   };
 

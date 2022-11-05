@@ -5,7 +5,6 @@
 #include <string>
 #include <fstream>
 #include "http-parser/http_parser.h"
-#include <initializer_list>
 
 namespace TTCPS2
 {
