@@ -60,6 +60,9 @@ private:
 public:
   TinyHTTPClient(const char* serverIP, unsigned short port);
 
+  std::string getServerIP() const;
+  unsigned short getServerPort() const;
+
   /// @brief 
   /// @param r 
   /// @return 0=OK; -1=ERROR

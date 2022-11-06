@@ -2,14 +2,20 @@
 #define _TinyTCPClient_hpp
 
 #include <sstream>
+#include <string>
 
 class TinyTCPClient
 {
 private:
   int skt;
-  TinyTCPClient(TinyTCPClient const&){}
+  TinyTCPClient(TinyTCPClient const&) : serverPort(0){}
   TinyTCPClient& operator=(TinyTCPClient const&){}
+
 public:
+
+  std::string const serverIP;
+  unsigned short const serverPort;
+
   TinyTCPClient(const char* serverIP, unsigned short port);
 
   /// @brief 阻塞式发送

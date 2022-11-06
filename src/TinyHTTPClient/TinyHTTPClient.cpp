@@ -114,6 +114,14 @@ TinyHTTPClient::TinyHTTPClient(const char* serverIP, unsigned short port)
   settings.on_message_complete = onMessageComplete;
 }
 
+std::string TinyHTTPClient::getServerIP() const{
+  return c->serverIP;
+}
+
+unsigned short TinyHTTPClient::getServerPort() const{
+  return c->serverPort;
+}
+
 #include <iomanip>
 std::string _dec2hex(int64_t i){
   std::stringstream ss;

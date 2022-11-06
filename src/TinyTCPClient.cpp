@@ -9,7 +9,9 @@
 #include <string.h>
 
 TinyTCPClient::TinyTCPClient(const char* serverIP, unsigned short port)
-: skt(socket(AF_INET, SOCK_STREAM, 0)){
+: skt(socket(AF_INET, SOCK_STREAM, 0))
+, serverIP(serverIP)
+, serverPort(port){
   sockaddr_in a;
   if(0>skt){
     std::cout << "TinyTCPClient::TinyTCPClient(): fail to create socket." << std::endl;
