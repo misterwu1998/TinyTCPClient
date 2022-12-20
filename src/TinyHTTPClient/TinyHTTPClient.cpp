@@ -67,9 +67,10 @@ int TinyHTTPClient::onBody(http_parser* parser, const char *at, size_t length){
     THIS->bodyFileNow.write(at,length);
   }else{//不是分块模式
     if(!THIS->responseNow->body){//还未创建Buffer
-      THIS->responseNow->body = std::make_shared<TTCPS2::Buffer>(length);
+      THIS->responseNow->body = std::make_shared<Buffer>(length);
     }
-    uint32_t al; auto wp = THIS->responseNow->body->getWritingPtr(length,al);
+    // uint32_t al; auto wp = THIS->responseNow->body->getWritingPtr(length,al);
+    auto wp = (*(THIS->responseNow->body))[length];
     memcpy(wp,at,length);
     THIS->responseNow->body->push(length);
   }
@@ -167,8 +168,10 @@ int TinyHTTPClient::send(TTCPS2::HTTPRequest const& r){
     l += nSent;
   }while(l<reqHead.length());
   
-  if(r.body && r.body->getLength()>0){//是长度已知的消息体
-    uint32_t len; auto rp = r.body->getReadingPtr(r.body->getLength(), len);
+  uint32_t len = r.body->getLength();
+  if(r.body && len>0){//是长度已知的消息体
+    // uint32_t len; auto rp = r.body->getReadingPtr(r.body->getLength(), len);
+    auto rp = **(r.body);
     l = 0;
     do{
       auto nSent = c->send((char*)rp, len-l);

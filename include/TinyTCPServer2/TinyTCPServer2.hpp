@@ -7,12 +7,8 @@
 #endif // LENGTH_PER_SEND
 
 #if !defined(EPOLL_SIZE)
-#define EPOLL_SIZE 128 //epoll监听树结点上限
+#define EPOLL_SIZE 1024 //epoll监听树结点上限
 #endif // EPOLL_SIZE
-
-#if !defined(LISTEN_SIZE)
-#define LISTEN_SIZE 16 //端口监听上限
-#endif // LISTEN_SIZE
 
 
 #if !defined(_TinyTCPServer2_hpp)
@@ -23,7 +19,6 @@
 #include <thread>
 #include <mutex>
 #include <unordered_map>
-#include "spdlog/spdlog.h"
 
 namespace TTCPS2
 {
