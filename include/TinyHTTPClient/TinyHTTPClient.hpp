@@ -6,11 +6,8 @@
 #include <fstream>
 #include "http-parser/http_parser.h"
 
-namespace TTCPS2
-{
-  class HTTPRequest;
-  class HTTPResponse;
-} // namespace TTCPS2
+class HTTPRequest;
+class HTTPResponse;
 class TinyTCPClient;
 
 class TinyHTTPClient
@@ -47,7 +44,7 @@ private:
   static int onChunkComplete(http_parser* parser);
   static int onMessageComplete(http_parser* parser);
 
-  TTCPS2::HTTPResponse* responseNow;
+  HTTPResponse* responseNow;
   http_parser parser;
   http_parser_settings settings;
   char* buf;
@@ -66,12 +63,12 @@ public:
   /// @brief 
   /// @param r 
   /// @return 0=OK; -1=ERROR
-  int send(TTCPS2::HTTPRequest const& r);
+  int send(HTTPRequest const& r);
 
   /// @brief 
   /// @param r 
   /// @return 0=OK; -1=ERROR
-  int recv(TTCPS2::HTTPResponse& r);
+  int recv(HTTPResponse& r);
   virtual~TinyHTTPClient();
 };
 

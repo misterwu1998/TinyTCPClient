@@ -20,53 +20,49 @@
 #include <mutex>
 #include <unordered_map>
 
-namespace TTCPS2
+class TCPConnectionFactory;
+class TCPConnection;
+class ThreadPool;
+class Acceptor;
+class NetIOReactor;
+
+class TinyTCPServer2
 {
-  class TCPConnectionFactory;
-  class TCPConnection;
-  class ThreadPool;
-  class Acceptor;
-  class NetIOReactor;
+public:
 
-  class TinyTCPServer2
-  {
-  public:
+  const char* ip;
+  unsigned short port;
+  unsigned int listenSize;
+  unsigned int nNetIOReactors;
+  std::shared_ptr<TCPConnectionFactory> factory;
+  ThreadPool* const tp;
 
-    const char* ip;
-    unsigned short port;
-    unsigned int listenSize;
-    unsigned int nNetIOReactors;
-    std::shared_ptr<TCPConnectionFactory> factory;
-    ThreadPool* const tp;
+  // 常量
 
-    // 常量
+  std::shared_ptr<Acceptor> acceptor;
+  std::vector<std::shared_ptr<NetIOReactor>> netIOReactors;
+  std::vector<std::thread> oneLoopPerThread;//nNetIOReactors个网络IO反应堆 + 1个Acceptor
 
-    std::shared_ptr<Acceptor> acceptor;
-    std::vector<std::shared_ptr<NetIOReactor>> netIOReactors;
-    std::vector<std::thread> oneLoopPerThread;//nNetIOReactors个网络IO反应堆 + 1个Acceptor
+  // 常量 //
 
-    // 常量 //
+  /// @brief <socket文件描述符, TCPConnection对象>
+  std::unordered_map<int, std::shared_ptr<TCPConnection>> connections;
+  std::mutex m_connections;
 
-    /// @brief <socket文件描述符, TCPConnection对象>
-    std::unordered_map<int, std::shared_ptr<TCPConnection>> connections;
-    std::mutex m_connections;
+  TinyTCPServer2(
+      const char* ip
+    , unsigned short port 
+    , unsigned int listenSize
+    , unsigned int nNetIOReactors
+    , std::shared_ptr<TCPConnectionFactory> const& factory
+    , ThreadPool* const tp //线程池是单例
+    // 日志器改为全局单例，封装后交给库使用者去指定, std::shared_ptr<spdlog::logger> logger //默认值: spdlog::rotating_logger_mt<spdlog::async_factory>("TinyTCPServer2.logger","./.log/",4*1024*1024,4);
+  );
 
-    TinyTCPServer2(
-        const char* ip
-      , unsigned short port 
-      , unsigned int listenSize
-      , unsigned int nNetIOReactors
-      , std::shared_ptr<TCPConnectionFactory> const& factory
-      , ThreadPool* const tp //线程池是单例
-      // 日志器改为全局单例，封装后交给库使用者去指定, std::shared_ptr<spdlog::logger> logger //默认值: spdlog::rotating_logger_mt<spdlog::async_factory>("TinyTCPServer2.logger","./.log/",4*1024*1024,4);
-    );
+  int run();
+  int shutdown();
 
-    int run();
-    int shutdown();
-
-    ~TinyTCPServer2();
-  };
-
-} // namespace TTCPS2
+  ~TinyTCPServer2();
+};
 
 #endif // _TinyTCPServer2_hpp

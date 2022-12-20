@@ -51,12 +51,12 @@ int TinyHTTPClient::onBody(http_parser* parser, const char *at, size_t length){
   if(it!=THIS->responseNow->header.end() && it->second.find("chunked")!=std::string::npos){//是分块模式
     if(THIS->bodyFileNow.is_open()==false){//暂未有文件
       auto prefix = "./temp/response_data_";
-      THIS->responseNow->filePath = prefix + std::to_string(TTCPS2::currentTimeMillis());
+      THIS->responseNow->filePath = prefix + std::to_string(currentTimeMillis());
       while(true){//循环直到文件名不重复
         THIS->bodyFileNow.open(THIS->responseNow->filePath, std::ios::in | std::ios::binary);
         if(THIS->bodyFileNow.is_open()){//说明这个同名文件已存在
           THIS->bodyFileNow.close();
-          THIS->responseNow->filePath = prefix + std::to_string(TTCPS2::currentTimeMillis());//换个名字
+          THIS->responseNow->filePath = prefix + std::to_string(currentTimeMillis());//换个名字
         }else{
           THIS->bodyFileNow.close();
           break;
@@ -132,7 +132,7 @@ std::string _dec2hex(int64_t i){
   return ret;
 }
 
-int TinyHTTPClient::send(TTCPS2::HTTPRequest const& r){
+int TinyHTTPClient::send(HTTPRequest const& r){
   std::string reqHead;
  {std::stringstream ss;
 
@@ -168,9 +168,8 @@ int TinyHTTPClient::send(TTCPS2::HTTPRequest const& r){
     l += nSent;
   }while(l<reqHead.length());
   
-  uint32_t len = r.body->getLength();
-  if(r.body && len>0){//是长度已知的消息体
-    // uint32_t len; auto rp = r.body->getReadingPtr(r.body->getLength(), len);
+  if(r.body && r.body->getLength() > 0){//是长度已知的消息体
+    auto len = r.body->getLength();
     auto rp = **(r.body);
     l = 0;
     do{
@@ -213,7 +212,7 @@ int TinyHTTPClient::send(TTCPS2::HTTPRequest const& r){
   return 0;
 }
 
-int TinyHTTPClient::recv(TTCPS2::HTTPResponse& r){
+int TinyHTTPClient::recv(HTTPResponse& r){
   if(responseNow){//按照预期，上一个response应当已经整个被读走、responseNow被onMessageComplete()设为空（而onMessageComplete()返回非0使parser立即停止，也是因此需要每次都初始化parser），因为这里会阻塞式recv()直到一个response完整读入，甚至会有多余的数据
     return -1;
   }

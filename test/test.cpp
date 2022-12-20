@@ -9,7 +9,7 @@ int main(int argc, char const *argv[])
   TinyHTTPClient c("127.0.0.1",6324);
   auto ip = c.getServerIP();
   auto port = c.getServerPort();
-  TTCPS2::HTTPRequest req;
+  HTTPRequest req;
   // req.set(http_method::HTTP_POST)
   //    .set("/null")
   //    .set_chunked("./Makefile");
@@ -17,7 +17,7 @@ int main(int argc, char const *argv[])
      .set("/chunked");
   c.send(req);
   c.send(req);
-  TTCPS2::HTTPResponse res;
+  HTTPResponse res;
   c.recv(res);
   c.recv(res);
 

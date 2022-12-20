@@ -5,8 +5,6 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 
-namespace TTCPS2
-{
   class Logger
   {
   private:
@@ -41,9 +39,7 @@ namespace TTCPS2
 
   };
 
-} // namespace TTCPS2
-
-#define TTCPS2_SPD_LOGGER (*(TTCPS2::Logger::initOrGet())) 
+#define TTCPS2_SPD_LOGGER (*(Logger::initOrGet())) 
 #define TTCPS2_LOGGER TTCPS2_SPD_LOGGER 
 
 #endif // _Logger_hpp
