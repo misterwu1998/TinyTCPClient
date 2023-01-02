@@ -12,11 +12,10 @@ class HTTPResponse;
 class HTTPHandler : virtual public TCPConnection
 {
 private:
-  std::unordered_map<
-    http_method,
-    std::unordered_map<
-        std::string
-      , std::function<std::shared_ptr<HTTPResponse> (std::shared_ptr<HTTPRequest>)>>> const& router;
+  std::vector<std::pair<
+    std::function<bool (std::shared_ptr<HTTPRequest>)>,
+    std::function<std::shared_ptr<HTTPResponse> (std::shared_ptr<HTTPRequest>)>
+  >> const& router;
   Buffer* unParsed;
   http_parser parser;
   http_parser_settings settings;
@@ -60,11 +59,10 @@ public:
   HTTPHandler(
       NetIOReactor* netIOReactor
     , int clientSocket
-    , std::unordered_map<
-        http_method,
-        std::unordered_map<
-            std::string
-          , std::function<std::shared_ptr<HTTPResponse> (std::shared_ptr<HTTPRequest>)>>> const& router);
+    , std::vector<std::pair<
+        std::function<bool (std::shared_ptr<HTTPRequest>)>,
+        std::function<std::shared_ptr<HTTPResponse> (std::shared_ptr<HTTPRequest>)>
+      >> const& router);
   virtual int handle();
   virtual ~HTTPHandler();
   

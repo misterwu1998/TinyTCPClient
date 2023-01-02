@@ -15,25 +15,24 @@ class HTTPHandlerFactory : virtual public TCPConnectionFactory
 {
 protected:
 
-  /// @brief <请求方法, <URL, 回调函数<响应 (请求)>>>
-  std::unordered_map<
-    http_method
-  , std::unordered_map<
-      std::string
-    , std::function<std::shared_ptr<HTTPResponse> (std::shared_ptr<HTTPRequest>)>
-    >
-  > router;
+  /// @brief vector<谓词<是否满足条件 (HTTP请求)>, 回调函数<HTTP响应 (HTTP请求)>>
+  std::vector<std::pair<
+    std::function<bool (std::shared_ptr<HTTPRequest>)>,
+    std::function<std::shared_ptr<HTTPResponse> (std::shared_ptr<HTTPRequest>)>
+  >> router;
 
 public:
 
   HTTPHandlerFactory();
 
-  /// @brief 将方法为method，路径为path的请求路由到指定的回调函数
-  /// @param method 
-  /// @param path 
-  /// @param callback 
-  /// @return 1表示回调函数被追加；0表示原有的回调函数被替换；-1表示出错
-  int route(http_method method, std::string const& path, std::function<std::shared_ptr<HTTPResponse> (std::shared_ptr<HTTPRequest>)> const& callback);
+  /// @brief 将满足predicate的HTTP请求分发给相应的回调函数；顺序上先被route的predicate，就先被考虑
+  /// @param predicate function<是否满足条件 (HTTP请求)>
+  /// @param callback function<HTTP响应 (HTTP请求)>
+  /// @return 0
+  int route(
+    std::function<bool (std::shared_ptr<HTTPRequest>)> const& predicate,
+    std::function<std::shared_ptr<HTTPResponse> (std::shared_ptr<HTTPRequest>)> const& callback
+  );
 
   virtual std::shared_ptr<TCPConnection> operator()(NetIOReactor* netIOReactor, int clientSocket);
 
