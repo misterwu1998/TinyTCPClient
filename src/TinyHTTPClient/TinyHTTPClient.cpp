@@ -6,7 +6,7 @@
 #include <fstream>
 #include "util/Buffer.hpp"
 #include "http-parser/http_parser.h"
-#include "util/TimerTask.hpp"
+#include "util/Time.hpp"
 
 #define BUFFER_SIZE 1024
 #define THIS ((TinyHTTPClient*)(parser->data))
