@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 
+/// @warning Windows下，不负责WSA环境初始化和销毁工作
 class TinyTCPClient
 {
 private:
@@ -31,6 +32,7 @@ public:
   int64_t recv_nowait(char* data, uint32_t capacity);
 
   virtual~TinyTCPClient();
+  
 };
 
 #endif // _TinyTCPClient_hpp
