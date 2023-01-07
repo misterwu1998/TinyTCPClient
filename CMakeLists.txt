@@ -4,7 +4,9 @@ project(TinyTCPClient VERSION 0.1.0)
 include(CTest)
 enable_testing()
 
-include_directories(./include/)
+include_directories(./include/) # http-parser、TinyTCPClient、TinyHTTPClient
+include_directories(../MyUtils/include/)
+include_directories(../TinyTCPServer2/include/)
 
 # TinyTCPClient
 if(UNIX)
