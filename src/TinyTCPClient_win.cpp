@@ -2,7 +2,7 @@
 #include <winsock2.h>
 #include <iostream>
 
-#pragma comment(lib, "ws2_32.lib")
+// #pragma comment(lib, "ws2_32.lib")
 
 TinyTCPClient::TinyTCPClient(const char* serverIP, unsigned short port)
 : serverIP(serverIP), serverPort(port), skt(socket(AF_INET,SOCK_STREAM,0)){
@@ -29,8 +29,14 @@ int64_t TinyTCPClient::send(const char* data, uint32_t length){
     return -1;
   }
   auto ret = ::send(skt,data,length,0);
-  if(SOCKET_ERROR==ret){
-    std::cout << "TinyTCPClient::send(): fail to send data" << std::endl;
+  if(SOCKET_ERROR==ret)
+  {
+    if(WSAEINTR==WSAGetLastError()){//错误是中断信号造成的
+      return 0;
+    }
+    // 丢弃连接
+    ::closesocket(skt);
+    skt = INVALID_SOCKET;
     return -1;
   }
   return ret;
@@ -42,8 +48,14 @@ int64_t TinyTCPClient::recv(char* data, uint32_t capacity){
     return -1;
   }
   auto ret = ::recv(skt,data,capacity,0);
-  if(SOCKET_ERROR==ret){
-    std::cout << "TinyTCPClient::send(): fail to recv data" << std::endl;
+  if(SOCKET_ERROR==ret)
+  {
+    if(WSAGetLastError()==WSAEINTR){//错误是中断信号造成的
+      return 0;
+    }
+    // 丢弃连接
+    ::closesocket(skt);
+    skt = INVALID_SOCKET;
     return -1;
   }
   if(0==ret){//正常关闭
@@ -65,23 +77,22 @@ int64_t TinyTCPClient::recv_nowait(char* data, uint32_t capacity){
   auto ret = ioctlsocket(skt,FIONBIO, &flag);
   if(SOCKET_ERROR==ret){
     std::cout << "TinyTCPClient::recv_nowait(): fail to set socket unblocked." << std::endl;
+    ::closesocket(skt);
+    skt = INVALID_SOCKET;
     return -1;
   }
 
   auto len = ::recv(skt,data,capacity,0);
-  if(SOCKET_ERROR==len &&
-     WSAGetLastError()!=WSAEWOULDBLOCK/*并非资源暂时不可用的情况*/)
+  if(SOCKET_ERROR==len)
   {
-    // 改回阻塞socket
-    flag = 0;
-    ret = ioctlsocket(skt,FIONBIO, &flag);
-    if(SOCKET_ERROR==ret){
-      std::cout << "TinyTCPClient::recv_nowait(): fail to reset socket blocked." << std::endl;
-      return -1;
+    if(WSAGetLastError()==WSAEWOULDBLOCK){//暂无数据
+      return 0;
     }
-
+    // 丢弃连接
     std::cout << "TinyTCPClient::recv_nowait(): fail to recv data from socket "
               << skt << std::endl;
+    ::closesocket(skt);
+    skt = INVALID_SOCKET;
     return -1;
   }
 
@@ -90,6 +101,8 @@ int64_t TinyTCPClient::recv_nowait(char* data, uint32_t capacity){
   ret = ioctlsocket(skt,FIONBIO, &flag);
   if(SOCKET_ERROR==ret){
     std::cout << "TinyTCPClient::recv_nowait(): fail to reset socket blocked." << std::endl;
+    ::closesocket(skt);
+    skt = INVALID_SOCKET;
     return -1;
   }
 
