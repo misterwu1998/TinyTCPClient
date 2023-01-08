@@ -46,6 +46,11 @@ int64_t TinyTCPClient::recv(char* data, uint32_t capacity){
     std::cout << "TinyTCPClient::send(): fail to recv data" << std::endl;
     return -1;
   }
+  if(0==ret){//正常关闭
+    ::closesocket(skt);
+    skt = INVALID_SOCKET;
+    return -1;
+  }
   return ret;
 }
 
@@ -64,7 +69,17 @@ int64_t TinyTCPClient::recv_nowait(char* data, uint32_t capacity){
   }
 
   auto len = ::recv(skt,data,capacity,0);
-  if(SOCKET_ERROR==len){
+  if(SOCKET_ERROR==len &&
+     WSAGetLastError()!=WSAEWOULDBLOCK/*并非资源暂时不可用的情况*/)
+  {
+    // 改回阻塞socket
+    flag = 0;
+    ret = ioctlsocket(skt,FIONBIO, &flag);
+    if(SOCKET_ERROR==ret){
+      std::cout << "TinyTCPClient::recv_nowait(): fail to reset socket blocked." << std::endl;
+      return -1;
+    }
+
     std::cout << "TinyTCPClient::recv_nowait(): fail to recv data from socket "
               << skt << std::endl;
     return -1;

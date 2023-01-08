@@ -47,21 +47,27 @@ int64_t TinyTCPClient::recv(char* data, uint32_t capacity){
     std::cout << "TinyTCPClient::recv(): no socket." << std::endl;
     return -1;
   }
-  auto ret = ::recv(skt,data,capacity, MSG_NOSIGNAL);
+  auto ret = ::recv(skt,data,capacity, 0);
   if(0>ret){
     std::cout << "TinyTCPClient::send(): fail to send data, errno means: "<<strerror(errno) << std::endl;
+    return -1;
+  }else if(0==ret){//socket已经有序关闭
+    close(skt);
+    skt = -1;
     return -1;
   }
   return ret;
 }
 
 int64_t TinyTCPClient::recv_nowait(char* data, uint32_t capacity){
-  auto ret = ::recv(skt,data,capacity, MSG_NOSIGNAL|MSG_DONTWAIT);
+  auto ret = ::recv(skt,data,capacity, MSG_DONTWAIT);
   if(ret>0){//正常收取
     return ret;
   }
   else if (ret==0 || (errno!=EWOULDBLOCK && errno!=EAGAIN)){//对方挂断或其它导致不能再正常通信的意外
     std::cout << "TinyTCPClient::recv_nowait(): the connection through socket "<<skt<<" has dropped." << std::endl;
+    close(skt);
+    skt = -1;
     return -1;
   }
   else{//errno==EWOULDBLOCK, 没数据可以收了
